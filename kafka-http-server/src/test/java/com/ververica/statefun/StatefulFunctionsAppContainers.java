@@ -18,18 +18,6 @@
 
 package com.ververica.statefun;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import javax.annotation.Nullable;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
@@ -43,6 +31,18 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import javax.annotation.Nullable;
 
 /**
  * A JUnit {@link org.junit.rules.TestRule} that setups a containerized Stateful Functions
@@ -195,7 +195,7 @@ public final class StatefulFunctionsAppContainers extends ExternalResource {
 
     private final String appName;
     private final int numWorkers;
-    private final Network network;
+    private Network network;
 
     private final Configuration dynamicProperties = new Configuration();
     private final List<GenericContainer<?>> dependentContainers = new ArrayList<>();
@@ -214,6 +214,11 @@ public final class StatefulFunctionsAppContainers extends ExternalResource {
       this.network = Network.newNetwork();
       this.appName = appName;
       this.numWorkers = numWorkers;
+    }
+
+    public StatefulFunctionsAppContainers.Builder withNetwork(Network network) {
+      this.network = network;
+      return this;
     }
 
     public StatefulFunctionsAppContainers.Builder dependsOn(GenericContainer<?> container) {
@@ -326,7 +331,7 @@ public final class StatefulFunctionsAppContainers extends ExternalResource {
         int numWorkers,
         @Nullable Logger masterLogger) {
       final GenericContainer<?> master =
-          new GenericContainer(appImage)
+          new GenericContainer<>(appImage)
               .withNetwork(network)
               .withNetworkAliases(MASTER_HOST)
               .withEnv("ROLE", "master")
@@ -351,7 +356,7 @@ public final class StatefulFunctionsAppContainers extends ExternalResource {
 
       for (int i = 0; i < numWorkers; i++) {
         workers.add(
-            new GenericContainer(appImage)
+            new GenericContainer<>(appImage)
                 .withNetwork(network)
                 .withNetworkAliases(workerHostOf(i))
                 .withEnv("ROLE", "worker")
