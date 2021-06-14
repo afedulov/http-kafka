@@ -1,6 +1,11 @@
-version: "2.1"
-services:
+version: "3"
 
+networks:
+  kafka-cluster:
+    name: kafka-cluster
+    driver: bridge
+
+services:
   ### Zookeeper ###
   zoo1:
     image: zookeeper:3.4.9
@@ -15,6 +20,8 @@ services:
       # volumes:
       # - ./persistent_volumes/zoo1/data:/data
       # - ./persistent_volumes/zoo1/datalog:/datalog
+    networks:
+      - kafka-cluster
 
   ### Kafka ###
   kafka1:
@@ -34,3 +41,5 @@ services:
       # - ./persistent_volumes/kafka1/data:/var/lib/kafka/data
     depends_on:
       - zoo1
+    networks:
+      - kafka-cluster
