@@ -23,8 +23,8 @@ public class KafkaController {
 	@Autowired
 	private ReplyingKafkaTemplate<String, Student, Result> replyingKafkaTemplate;
 
-	@PostMapping("/get-result")
-	public ResponseEntity<Result> getObject(@RequestBody Student student)
+	@PostMapping("/invoke")
+	public ResponseEntity<Result> invoke(@RequestBody Student student)
 			throws InterruptedException, ExecutionException {
 		ProducerRecord<String, Student> record = new ProducerRecord<>(requestTopic, null, "STD001", student);
 		RequestReplyFuture<String, Student, Result> future = replyingKafkaTemplate.sendAndReceive(record);

@@ -1,5 +1,6 @@
 package com.ververica.statefun;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +12,6 @@ import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 
 @Configuration
 public class KafkaConfig {
-
 	@Value("${kafka.group.id}")
 	private String groupId;
 
