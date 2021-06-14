@@ -3,7 +3,7 @@ kafka:
     id: student-result-group
   reply:
     topic: result
-  reuest:
+  request:
     topic: student
 spring:
   kafka:

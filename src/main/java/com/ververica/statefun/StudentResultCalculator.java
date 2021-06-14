@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class StudentResultCalculator {
 
-	@KafkaListener(topics = "${kafka.reuest.topic}", groupId = "${kafka.group.id}")
+	@KafkaListener(topics = "${kafka.request.topic}", groupId = "${kafka.group.id}")
 	@SendTo
 	public Result handle(Student student) {
 		System.out.println("Calculating Result...");
