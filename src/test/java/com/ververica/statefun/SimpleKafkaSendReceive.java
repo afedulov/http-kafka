@@ -33,12 +33,23 @@ public class SimpleKafkaSendReceive {
   private static final String INVOKE_TOPIC = "invoke";
   private static final String INVOKE_RESULTS_TOPIC = "invoke-results";
 
+  private static final int NUM_WORKERS = 1;
+
   @Rule
   public KafkaContainer kafka =
           new KafkaContainer(KAFKA_IMAGE)
                   .withNetworkAliases(KAFKA_HOST)
                   .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
                   .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1");
+
+  @Rule
+  public StatefulFunctionsAppContainers verificationApp =
+          StatefulFunctionsAppContainers.builder("remote-module-verification", NUM_WORKERS)
+                  .dependsOn(kafka)
+//                  .dependsOn(remoteFunction)
+                  .exposeMasterLogs(LOG)
+                  .withBuildContextFileFromClasspath("remote-module", "/remote-module/")
+                  .build();
 
   @Test(timeout = 1000 * 60 * 10)
   public void run() {
