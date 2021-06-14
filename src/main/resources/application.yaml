@@ -1,0 +1,20 @@
+kafka:
+  group:
+    id: student-result-group
+  reply:
+    topic: result
+  reuest:
+    topic: student
+spring:
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: com.asb.example
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
