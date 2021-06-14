@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.KafkaContainer;
 
 @Import(value = {KafkaTestConfig.class, KafkaConfig.class})
 @DirtiesContext
@@ -22,6 +23,15 @@ class KafkaControllerTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private ContainerBean<KafkaContainer> kafkaContainer;
+
+	public StatefulFunctionsAppContainers myApp =
+		StatefulFunctionsAppContainers.builder("app-name", 3)
+			.withNetwork(kafkaContainer.getContainer().getNetwork())
+			.dependsOn(kafkaContainer.getContainer())
+			.build();
 
 	@Test
 	void invocationSucceeds() throws Exception {
