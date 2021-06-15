@@ -118,14 +118,14 @@ public final class StatefulFunctionsAppContainers extends ExternalResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(StatefulFunctionsAppContainers.class);
 
-  private GenericContainer<?> master;
-  private List<GenericContainer<?>> workers;
+  private final GenericContainer<?> master;
+  private final List<GenericContainer<?>> workers;
 
   private File checkpointDir;
 
   private StatefulFunctionsAppContainers(
-      GenericContainer<?> masterContainer, List<GenericContainer<?>> workerContainers) {
-    this.master = Objects.requireNonNull(masterContainer);
+      GenericContainer<?> managerContainer, List<GenericContainer<?>> workerContainers) {
+    this.master = Objects.requireNonNull(managerContainer);
     this.workers = Objects.requireNonNull(workerContainers);
   }
 
