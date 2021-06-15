@@ -25,7 +25,6 @@ import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.statefun.flink.core.StatefulFunctionsConfig;
-import org.apache.flink.util.FileUtils;
 import org.junit.rules.ExternalResource;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -39,7 +38,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
@@ -113,6 +111,13 @@ public class StatefulFunctionCluster extends ExternalResource {
     return this;
   }
 
+  public StatefulFunctionCluster withCheckpointDir(String bindPath) {
+    allContainersStream()
+        .forEach((c) -> c.withFileSystemBind(bindPath, "/checkpoint-dir", BindMode.READ_WRITE));
+
+    return this;
+  }
+
   /** @return the exposed port on master for calling REST APIs. */
   public int getManagerRestPort() {
     return manager.getRestPort();
@@ -136,27 +141,13 @@ public class StatefulFunctionCluster extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
-    checkpointDir = temporaryCheckpointDir();
-
-    allContainersStream().forEach((c) -> {
-      // TODO: expose through a withCheckpointDir() func
-//      c.withFileSystemBind(
-//          checkpointDir.getAbsolutePath(), "/checkpoint-dir", BindMode.READ_WRITE);
-      c.start();
-    });
+  protected void before() {
+    allContainersStream().forEach(GenericContainer::start);
   }
 
   @Override
   protected void after() {
     allContainersStream().forEach(GenericContainer::stop);
-
-    FileUtils.deleteDirectoryQuietly(checkpointDir);
-  }
-
-  private static File temporaryCheckpointDir() throws IOException {
-    final Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
-    return Files.createTempDirectory(currentWorkingDir, "statefun-app-checkpoints-").toFile();
   }
 
   public static class StatefunManagerContainer extends GenericStatefunContainer<StatefunManagerContainer> {
