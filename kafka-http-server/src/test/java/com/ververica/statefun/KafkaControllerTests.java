@@ -11,7 +11,7 @@ import com.ververica.statefun.ModuleDefinition.ModuleSpec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +20,14 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(classes = SpringKafkaSynchronousExampleApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 class KafkaControllerTests {
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaControllerTests.class);
 
@@ -132,6 +132,12 @@ class KafkaControllerTests {
 		});
 	}};
 
+	@DynamicPropertySource
+	static void kafkaProperties(DynamicPropertyRegistry registry) {
+		kafka.start();
+		registry.add( "spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
+	}
+
 	@BeforeEach
 	public void before() throws Throwable {
 		remoteGreeter.start();
@@ -151,11 +157,5 @@ class KafkaControllerTests {
 		var response = restTemplate.postForEntity("/invoke", student, Result.class);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-	}
-
-	@DynamicPropertySource
-	static void kafkaProperties(DynamicPropertyRegistry registry) {
-		kafka.start();
-		registry.add( "spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
 	}
 }
