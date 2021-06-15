@@ -140,8 +140,9 @@ public class StatefulFunctionCluster extends ExternalResource {
     checkpointDir = temporaryCheckpointDir();
 
     allContainersStream().forEach((c) -> {
-      c.withFileSystemBind(
-          checkpointDir.getAbsolutePath(), "/checkpoint-dir", BindMode.READ_WRITE);
+      // TODO: expose through a withCheckpointDir() func
+//      c.withFileSystemBind(
+//          checkpointDir.getAbsolutePath(), "/checkpoint-dir", BindMode.READ_WRITE);
       c.start();
     });
   }

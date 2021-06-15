@@ -8,6 +8,8 @@ import com.ververica.statefun.ModuleDefinition.KafkaEgress.KafkaEgressSpec;
 import com.ververica.statefun.ModuleDefinition.KafkaIngress;
 import com.ververica.statefun.ModuleDefinition.ModuleMeta;
 import com.ververica.statefun.ModuleDefinition.ModuleSpec;
+import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation;
+import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation.V1Alpha1InvocationRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
-@SpringBootTest(classes = SpringKafkaSynchronousExampleApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = KafkaHttpApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ExtendWith(SpringExtension.class)
 class KafkaControllerTests {
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaControllerTests.class);
@@ -54,7 +56,6 @@ class KafkaControllerTests {
 		withNetworkAliases(KAFKA_HOST);
 		withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1");
 		withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1");
-		withLogConsumer(new Slf4jLogConsumer(LOG));
 	}};
 
 	public static StatefulFunctionCluster statefunCluster = new StatefulFunctionCluster(StatefulFunctionCluster.DEFAULT_IMAGE_WITH_VERSION, 0) {{
@@ -102,12 +103,12 @@ class KafkaControllerTests {
 										.build())
 									.topic(KafkaIngress.KafkaTopic.builder()
 										.topic("invoke")
-										.valueType("greeter.types/com.ververica.statefun.greeter.types.generated.UserProfile")
+										.valueType("io.statefun.types/string")
 										.target("org.apache.flink.statefun.e2e.remote/greeter")
 										.build())
 									.build())
 								.build())
-							// egresss
+							// egress
 							.egress(
 								KafkaEgress.builder()
 									.meta(ModuleDefinition.EgressMeta.builder()
@@ -151,11 +152,36 @@ class KafkaControllerTests {
 	}
 
 	@Test
-	void invocationSucceeds() throws Exception {
-		var student = new Student("001", "austin", "9");
+	void invocationSucceeds() {
+		var invocationReq = V1Alpha1Invocation.builder()
+			.request(V1Alpha1InvocationRequest.builder()
+				.key("test-message")
+				.ingressTopic("invoke")
+				.egressTopic("invoke-results")
+				.value("some value".getBytes())
+				.build())
+			.build();
 
-		var response = restTemplate.postForEntity("/invoke", student, Result.class);
+		var response = restTemplate.postForEntity("/v1alpha1/invocation", invocationReq, V1Alpha1Invocation.class);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
+
+	@Test
+	void timeoutSendsCorrelationId() {
+		var invocationReq = V1Alpha1Invocation.builder()
+			.request(V1Alpha1InvocationRequest.builder()
+				.key("test-message")
+				.ingressTopic("invoke")
+				.egressTopic("non-existent")
+				.value("some value".getBytes())
+				.build())
+			.build();
+
+		var response = restTemplate.postForEntity("/v1alpha1/invocation?timeout=1", invocationReq, V1Alpha1Invocation.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+
+		assertThat(response.getBody().getMetadata().getCorrelationId()).isNotEmpty();
 	}
 }
