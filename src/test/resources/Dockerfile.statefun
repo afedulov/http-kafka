@@ -17,5 +17,6 @@ FROM apache/flink-statefun:3.0.0
 
 #RUN mkdir -p /opt/statefun/modules/statefun-remote-module-e2e
 #COPY remote-module/ /opt/statefun/modules/statefun-remote-module-e2e/
+
 COPY remote-module/ /opt/statefun/modules/statefun-remote-module-e2e/
 COPY flink-conf.yaml $FLINK_HOME/conf/flink-conf.yaml

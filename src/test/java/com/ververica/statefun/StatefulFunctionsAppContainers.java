@@ -264,7 +264,7 @@ public final class StatefulFunctionsAppContainers extends ExternalResource {
 
       final ImageFromDockerfile appImage =
           new ImageFromDockerfile(appName)
-              .withFileFromClasspath("Dockerfile", "Dockerfile")
+              .withFileFromClasspath("Dockerfile", "Dockerfile.statefun")
               .withFileFromPath(".", targetDirPath);
 
       Configuration flinkConf = resolveFlinkConf(dynamicProperties);

@@ -1,0 +1,12 @@
+# Start with a base image containing Java runtime
+FROM adoptopenjdk/openjdk11:debianslim-jre
+
+# Make port 5656 available to the world outside this container
+EXPOSE 5656
+
+COPY target/http-kafka-*T.jar  http-kafka.jar
+
+# Run the jar file
+# ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-Dspring.profiles.active=dev","-jar","/http-kafka.jar"]
+
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom", "-jar","/http-kafka.jar"]
