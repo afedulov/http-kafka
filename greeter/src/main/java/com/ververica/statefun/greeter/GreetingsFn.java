@@ -21,6 +21,7 @@ package com.ververica.statefun.greeter;
 import static com.ververica.statefun.greeter.types.Types.USER_PROFILE_PROTOBUF_TYPE;
 
 import com.ververica.statefun.greeter.types.generated.UserProfile;
+import org.apache.flink.statefun.sdk.java.Address;
 import org.apache.flink.statefun.sdk.java.Context;
 import org.apache.flink.statefun.sdk.java.StatefulFunction;
 import org.apache.flink.statefun.sdk.java.StatefulFunctionSpec;
@@ -50,6 +51,8 @@ final class GreetingsFn implements StatefulFunction {
 
   @Override
   public CompletableFuture<Void> apply(Context context, Message message) {
+    System.out.println("Got message from: " + context.caller().map(Address::id).orElse("unknown"));
+
     if (message.is(USER_PROFILE_PROTOBUF_TYPE)) {
       final UserProfile profile = message.as(USER_PROFILE_PROTOBUF_TYPE);
       final String greetings = createGreetingsMessage(profile);
@@ -62,6 +65,15 @@ final class GreetingsFn implements StatefulFunction {
               .withUtf8Value(greetings)
               .build());
     }
+    if (message.isUtf8String()) {
+      context.send(
+          KafkaEgressMessage.forEgress(EGRESS_TYPE)
+              .withTopic(EGRESS_TOPIC)
+              .withUtf8Key(context.self().id())
+              .withUtf8Value(message + " echo  echo    echo        echo                      ec|")
+              .build());
+    }
+
     return context.done();
   }
 
