@@ -5,9 +5,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SpringKafkaSynchronousExampleApplication {
+public class KafkaHttpApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SpringKafkaSynchronousExampleApplication.class, args);
+		SpringApplication.run(KafkaHttpApplication.class, args);
 	}
 }

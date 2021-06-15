@@ -1,10 +1,6 @@
 kafka:
   group:
-    id: student-result-group
-  reply:
-    topic: result
-  request:
-    topic: student
+    id: test-group
 spring:
   kafka:
     consumer:

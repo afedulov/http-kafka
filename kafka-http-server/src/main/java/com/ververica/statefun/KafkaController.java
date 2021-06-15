@@ -1,34 +1,89 @@
 package com.ververica.statefun;
 
-import java.util.concurrent.ExecutionException;
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import com.ververica.statefun.reqreply.ReplyingKafkaTemplatePool;
+import com.ververica.statefun.reqreply.StatefunCorrelationIdStrategy;
+import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation;
+import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation.V1Alpha1InvocationMetadata;
+import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation.V1Alpha1InvocationResponse;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import org.springframework.kafka.requestreply.KafkaReplyTimeoutException;
 import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 public class KafkaController {
-
-	@Value("${kafka.request.topic}")
-	private String requestTopic;
+	ReplyingKafkaTemplatePool<String, byte[], byte[]> pool;
 
 	@Autowired
-	private ReplyingKafkaTemplate<String, Student, Result> replyingKafkaTemplate;
+	public KafkaController(ReplyingKafkaTemplatePool<String, byte[], byte[]> pool) {
+		this.pool = pool;
+	}
 
-	@PostMapping("/invoke")
-	public ResponseEntity<Result> invoke(@RequestBody Student student)
+	@PostMapping("/v1alpha1/invocation")
+	public ResponseEntity<?> invoke(@RequestBody V1Alpha1Invocation invocation,  @RequestParam(value = "timeout", defaultValue = "-1") final Long timeout)
 			throws InterruptedException, ExecutionException {
-		ProducerRecord<String, Student> record = new ProducerRecord<>(requestTopic, null, "STD001", student);
-		RequestReplyFuture<String, Student, Result> future = replyingKafkaTemplate.sendAndReceive(record);
-		ConsumerRecord<String, Result> response = future.get();
-		return new ResponseEntity<>(response.value(), HttpStatus.OK);
+		var req = invocation.getRequest();
+		if (req == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing request");
+		}
+
+		var correlationId = Optional.ofNullable(invocation.getMetadata())
+			.map(V1Alpha1InvocationMetadata::getCorrelationId)
+			.orElseGet(StatefunCorrelationIdStrategy::createCorrelationId);
+
+		var record = new ProducerRecord<>(req.getIngressTopic(), null, req.getKey(), req.getValue());
+		record.headers().add(StatefunAnnotations.CORRELATION_ID, correlationId.getBytes());
+
+		var template = pool.getTemplate(req.getEgressTopic());
+
+		RequestReplyFuture<String, byte[], byte[]> future;
+		if (timeout > 0) {
+			future = template.sendAndReceive(record, Duration.ofMillis(timeout));
+		} else {
+			future = template.sendAndReceive(record);
+		}
+		return future
+			.completable()
+			.thenApply((responseRecord) -> {
+				var response = V1Alpha1Invocation.builder()
+					.metadata(V1Alpha1InvocationMetadata.builder()
+						.correlationId(correlationId)
+						.build())
+					.response(
+						V1Alpha1InvocationResponse.builder()
+							.key(responseRecord.key())
+							.value(responseRecord.value())
+							.build()
+					)
+					.build();
+
+				return new ResponseEntity<>(response, HttpStatus.OK);
+			})
+			.exceptionally((err) -> {
+				var cause = err.getCause();
+				if (!(cause instanceof KafkaReplyTimeoutException)) {
+					throw new CompletionException(cause);
+				}
+
+				// If we timeout, just send back a 201 response with the correlation ID so it can be polled later
+				var response = V1Alpha1Invocation.builder()
+					.metadata(V1Alpha1InvocationMetadata.builder()
+						.correlationId(correlationId)
+						.build())
+					.build();
+
+				return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+			})
+			.get();
 	}
 }
