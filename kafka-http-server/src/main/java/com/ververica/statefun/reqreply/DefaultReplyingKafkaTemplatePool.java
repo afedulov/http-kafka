@@ -5,11 +5,12 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * Logically a cache of {@link ReplyingKafkaTemplate} for response topic listeners.
  */
-public class DefaultReplyingKafkaTemplatePool<K, V, R> implements ReplyingKafkaTemplatePool<K, V, R> {
+public class DefaultReplyingKafkaTemplatePool<K, V, R> implements StatefunReplyingKafkaTemplatePool<K, V, R> {
     private final String groupId;
 
     private final Map<String, StatefunReplyingKafkaTemplate<K, V, R>> templateMap = new ConcurrentHashMap<>();
@@ -18,10 +19,17 @@ public class DefaultReplyingKafkaTemplatePool<K, V, R> implements ReplyingKafkaT
 
     private final ConcurrentKafkaListenerContainerFactory<K, R> listenerContainerFactory;
 
+    private Function<StatefunReplyingKafkaTemplate<K, V, R>, StatefunReplyingKafkaTemplate<K, V, R>> templateModifier = Function.identity();
+
     public DefaultReplyingKafkaTemplatePool(String groupId, ProducerFactory<K, V> pf, ConcurrentKafkaListenerContainerFactory<K, R> listenerContainerFactory) {
         this.groupId = groupId;
         this.producerFactory = pf;
         this.listenerContainerFactory = listenerContainerFactory;
+    }
+
+    public DefaultReplyingKafkaTemplatePool<K, V, R> withModifier(Function<StatefunReplyingKafkaTemplate<K, V, R>, StatefunReplyingKafkaTemplate<K, V, R>> modifier) {
+        this.templateModifier = modifier;
+        return this;
     }
 
     public StatefunReplyingKafkaOperations<K, V, R> getTemplate(String replyTopic) {
@@ -40,6 +48,6 @@ public class DefaultReplyingKafkaTemplatePool<K, V, R> implements ReplyingKafkaT
         replyContainer.getContainerProperties().setMissingTopicsFatal(false);
         replyContainer.getContainerProperties().setGroupId(groupId);
 
-        return new StatefunReplyingKafkaTemplate<>(producerFactory, replyContainer);
+        return templateModifier.apply(new StatefunReplyingKafkaTemplate<>(producerFactory, replyContainer));
     }
 }

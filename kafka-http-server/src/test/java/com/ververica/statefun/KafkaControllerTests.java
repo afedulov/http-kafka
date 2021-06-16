@@ -184,4 +184,20 @@ class KafkaControllerTests {
 
 		assertThat(response.getBody().getMetadata().getCorrelationId()).isNotEmpty();
 	}
+
+	@Test
+	void invocationInPayloadSucceeds() {
+		var invocationReq = V1Alpha1Invocation.builder()
+			.request(V1Alpha1InvocationRequest.builder()
+				.key("test-message")
+				.ingressTopic("invoke")
+				.egressTopic("invoke-results")
+				.value("some value".getBytes())
+				.build())
+			.build();
+
+		var response = restTemplate.postForEntity("/v1alpha1/invocation:in-payload", invocationReq, V1Alpha1Invocation.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
 }

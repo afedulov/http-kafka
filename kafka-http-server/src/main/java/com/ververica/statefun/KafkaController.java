@@ -1,6 +1,6 @@
 package com.ververica.statefun;
 
-import com.ververica.statefun.reqreply.ReplyingKafkaTemplatePool;
+import com.ververica.statefun.reqreply.StatefunReplyingKafkaTemplatePool;
 import com.ververica.statefun.reqreply.StatefunProducerCorrelationIdStrategy;
 import com.ververica.statefun.reqreply.StatefunRequestReplyFuture;
 import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation;
@@ -22,11 +22,49 @@ import java.util.concurrent.ExecutionException;
 
 @RestController
 public class KafkaController {
-	ReplyingKafkaTemplatePool<String, byte[], byte[]> pool;
+	StatefunReplyingKafkaTemplatePool<String, byte[], byte[]> pool;
+	StatefunReplyingKafkaTemplatePool<String, V1Alpha1Invocation, V1Alpha1Invocation> payloadPool;
 
 	@Autowired
-	public KafkaController(ReplyingKafkaTemplatePool<String, byte[], byte[]> pool) {
+	public KafkaController(StatefunReplyingKafkaTemplatePool<String, byte[], byte[]> pool, StatefunReplyingKafkaTemplatePool<String, V1Alpha1Invocation, V1Alpha1Invocation> payloadPool) {
 		this.pool = pool;
+		this.payloadPool = payloadPool;
+	}
+
+	@PostMapping("/v1alpha1/invocation:in-payload")
+	public ResponseEntity<?> invokeViaPayload(@RequestBody V1Alpha1Invocation invocation,  @RequestParam(value = "timeout", defaultValue = "-1") final Long timeout)
+		throws InterruptedException, ExecutionException {
+		var req = invocation.getRequest();
+		if (req == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing request");
+		}
+
+		var record = new ProducerRecord<>(req.getIngressTopic(), null, req.getKey(), invocation);
+
+		var template = payloadPool.getTemplate(req.getEgressTopic());
+
+		StatefunRequestReplyFuture<String, V1Alpha1Invocation, V1Alpha1Invocation> future;
+		if (timeout > 0) {
+			future = template.sendAndReceive(record, Duration.ofMillis(timeout));
+		} else {
+			future = template.sendAndReceive(record);
+		}
+
+		var sentRecord = future.getSendFuture().completable().get().getProducerRecord();
+
+		return future
+			.completable()
+			.thenApply((responseRecord) -> new ResponseEntity<>(responseRecord.value(), HttpStatus.OK))
+			.exceptionally((err) -> {
+				var cause = err.getCause();
+				if (!(cause instanceof KafkaReplyTimeoutException)) {
+					throw new CompletionException(cause);
+				}
+
+				// If we timeout, just send back a 201 response with the sent record so it can be polled later by correlation ID
+				return ResponseEntity.status(HttpStatus.ACCEPTED).body(sentRecord.value());
+			})
+			.get();
 	}
 
 	@PostMapping("/v1alpha1/invocation")
