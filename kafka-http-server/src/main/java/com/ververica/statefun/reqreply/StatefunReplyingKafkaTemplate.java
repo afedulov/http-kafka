@@ -1,9 +1,9 @@
 package com.ververica.statefun.reqreply;
 
-import com.ververica.statefun.reqreply.StatefunCorrelationIdStrategy.DefaultStatefunCorrelationIdStrategy;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.DisposableBean;
@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -509,4 +510,24 @@ public class StatefunReplyingKafkaTemplate<K, V, R> extends KafkaTemplate<K, V> 
             + correlationId + ", perhaps timed out, or using a shared reply topic";
     }
 
+    public static class DefaultStatefunCorrelationIdStrategy<K, V, R>  implements StatefunCorrelationIdStrategy<K, V, R> {
+        @Override
+        public CorrelationKey apply(ProducerRecord<K, V> record) {
+            UUID uuid = UUID.randomUUID();
+            byte[] bytes = new byte[16]; // NOSONAR magic #
+            ByteBuffer bb = ByteBuffer.wrap(bytes);
+            bb.putLong(uuid.getMostSignificantBits());
+            bb.putLong(uuid.getLeastSignificantBits());
+            return new CorrelationKey(bytes);
+        }
+
+        @Override
+        public Optional<CorrelationKey> apply(ConsumerRecord<K, R> record) {
+            Header correlationHeader = record.headers().lastHeader(KafkaHeaders.CORRELATION_ID);
+            return Optional
+                .ofNullable(correlationHeader)
+                .map(Header::value)
+                .map(CorrelationKey::new);
+        }
+    }
 }
