@@ -1,7 +1,8 @@
 package com.ververica.statefun;
 
 import com.ververica.statefun.reqreply.ReplyingKafkaTemplatePool;
-import com.ververica.statefun.reqreply.StatefunCorrelationIdStrategy;
+import com.ververica.statefun.reqreply.StatefunProducerCorrelationIdStrategy;
+import com.ververica.statefun.reqreply.StatefunRequestReplyFuture;
 import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation;
 import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation.V1Alpha1InvocationMetadata;
 import com.ververica.statefun.reqreply.v1alpha1.V1Alpha1Invocation.V1Alpha1InvocationResponse;
@@ -10,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.requestreply.KafkaReplyTimeoutException;
-import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,14 +39,14 @@ public class KafkaController {
 
 		var correlationId = Optional.ofNullable(invocation.getMetadata())
 			.map(V1Alpha1InvocationMetadata::getCorrelationId)
-			.orElseGet(StatefunCorrelationIdStrategy::createCorrelationId);
+			.orElseGet(StatefunProducerCorrelationIdStrategy::createCorrelationId);
 
 		var record = new ProducerRecord<>(req.getIngressTopic(), null, req.getKey(), req.getValue());
 		record.headers().add(StatefunAnnotations.CORRELATION_ID, correlationId.getBytes());
 
 		var template = pool.getTemplate(req.getEgressTopic());
 
-		RequestReplyFuture<String, byte[], byte[]> future;
+		StatefunRequestReplyFuture<String, byte[], byte[]> future;
 		if (timeout > 0) {
 			future = template.sendAndReceive(record, Duration.ofMillis(timeout));
 		} else {

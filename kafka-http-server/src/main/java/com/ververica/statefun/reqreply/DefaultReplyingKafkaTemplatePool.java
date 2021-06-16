@@ -2,7 +2,6 @@ package com.ververica.statefun.reqreply;
 
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.kafka.requestreply.ReplyingKafkaOperations;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DefaultReplyingKafkaTemplatePool<K, V, R> implements ReplyingKafkaTemplatePool<K, V, R> {
     private final String groupId;
 
-    private final Map<String, ReplyingKafkaTemplate<K, V, R>> templateMap = new ConcurrentHashMap<>();
+    private final Map<String, StatefunReplyingKafkaTemplate<K, V, R>> templateMap = new ConcurrentHashMap<>();
 
     private final ProducerFactory<K, V> producerFactory;
 
@@ -25,24 +24,22 @@ public class DefaultReplyingKafkaTemplatePool<K, V, R> implements ReplyingKafkaT
         this.listenerContainerFactory = listenerContainerFactory;
     }
 
-    public ReplyingKafkaOperations<K, V, R> getTemplate(String replyTopic) {
+    public StatefunReplyingKafkaOperations<K, V, R> getTemplate(String replyTopic) {
         // TODO: add cleanup logic when there are no longer listeners to fix memory leak
-        synchronized (this) {
-            if (!templateMap.containsKey(replyTopic)) {
-                var template = buildTemplate(replyTopic);
-                template.start();
-                templateMap.put(replyTopic, template);
-            }
-        }
-
-        return templateMap.get(replyTopic);
+        return templateMap.computeIfAbsent(replyTopic,this::buildTemplateAndStart);
     }
 
-    private ReplyingKafkaTemplate<K, V, R> buildTemplate(String replyTopic) {
+    private StatefunReplyingKafkaTemplate<K, V, R> buildTemplateAndStart(String replyTopic) {
+        var template = buildTemplate(replyTopic);
+        template.start();
+        return template;
+    }
+
+    private StatefunReplyingKafkaTemplate<K, V, R> buildTemplate(String replyTopic) {
         var replyContainer = listenerContainerFactory.createContainer(replyTopic);
         replyContainer.getContainerProperties().setMissingTopicsFatal(false);
         replyContainer.getContainerProperties().setGroupId(groupId);
 
-        return new ReplyingKafkaTemplate<>(producerFactory, replyContainer);
+        return new StatefunReplyingKafkaTemplate<>(producerFactory, replyContainer);
     }
 }
