@@ -1,15 +1,12 @@
 kafka:
   group:
-    id: student-result-group
-  reply:
-    topic: result
-  request:
-    topic: student
+    id: http-request-reply
 spring:
   kafka:
     consumer:
-      auto-offset-reset: earliest
+      auto-offset-reset: latest
       enable-auto-commit: false
+      bootstrap-servers: localhost:9092
       properties:
         spring:
           json:
