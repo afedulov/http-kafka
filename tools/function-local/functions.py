@@ -112,7 +112,7 @@ def counter(context, message):
 
     logging.warning(invocation.request)
     
-    response = Response(key="somekey", value=n, responderId=context.address.id)
+    response = Response(key="somekey", value=n, responderId=context.address.namespace + "/" +context.address.name)
     invocation.response = response
 
     egress_message = kafka_egress_message(

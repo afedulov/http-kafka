@@ -1,0 +1,1 @@
+{"kind":"Invocation","apiVersion":"reqreply.statefun.ververica.com/v1alpha1","metadata":{"correlationId":"987654321"},"request":{"key":"key1","ingressTopic":"invoke","egressTopic":"invoke-results","value": "aGVsbG9mdW5jdGlvbnM="}}
