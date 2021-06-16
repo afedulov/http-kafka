@@ -62,8 +62,6 @@ public class StatefulFunctionCluster extends ExternalResource {
   private final StatefunManagerContainer manager;
   private final List<StatefunWorkerContainer> workers;
 
-  private File checkpointDir;
-
   public StatefulFunctionCluster(DockerImageName image, int numWorkers) {
     this(
         new StatefunManagerContainer(image),
