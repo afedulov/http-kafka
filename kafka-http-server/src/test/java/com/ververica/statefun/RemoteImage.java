@@ -17,15 +17,20 @@ public class RemoteImage {
 
   private static final String REMOTE_FUNCTION_HOST = "remote-function";
 
+  Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LOG);
+
   @Rule
   public GenericContainer<?> remoteFunction =
       new GenericContainer<>(remoteFunctionImage())
           .withNetworkAliases(REMOTE_FUNCTION_HOST)
-          .withLogConsumer(new Slf4jLogConsumer(LOG));
+          .withLogConsumer(logConsumer);
 
   @Test(timeout = 1000 * 60 * 10)
   public void noop() throws Exception {
+    remoteFunction.start();
     System.out.println("BLA");
+    System.out.println(remoteFunction.getLogs());
+    Thread.sleep(10000);
   }
 
   private static ImageFromDockerfile remoteFunctionImage() {
@@ -34,7 +39,8 @@ public class RemoteImage {
 
     return new ImageFromDockerfile("remote-function", false)
         .withFileFromClasspath("Dockerfile", "Dockerfile.remote-function")
-        .withFileFromPath("source/", pythonSourcePath)        .withFileFromClasspath("requirements.txt", "requirements.txt");
+        .withFileFromPath("source/", pythonSourcePath)
+        .withFileFromClasspath("requirements.txt", "requirements.txt");
   }
 
   private static Path remoteFunctionPythonSourcePath() {

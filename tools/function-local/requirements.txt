@@ -14,19 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.8-alpine
+apache-flink-statefun==3.0.0
+flask==1.1.1
+gunicorn==20.0.4
 
-RUN mkdir -p /app
-WORKDIR /app
 
-COPY requirements.txt /app
-RUN pip install -r requirements.txt
-
-COPY source/functions.py /app
-COPY source/remote_module_verification_pb2.py /app
-
-EXPOSE 8000
-
-#CMD ["gunicorn", "-b", "0.0.0.0:8000", "-w 1", "functions:app", "--log-level", "debug","--capture-output"]
-CMD ["python", "functions.py"]
 

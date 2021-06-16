@@ -46,3 +46,7 @@ venv
 dist/
 *whl
 __pycache__
+
+
+.vscode
+statefun-app-checkpoints*
