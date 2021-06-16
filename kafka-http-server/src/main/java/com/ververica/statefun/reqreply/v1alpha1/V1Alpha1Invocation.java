@@ -53,6 +53,8 @@ public class V1Alpha1Invocation {
         String key;
 
         byte[] value;
+
+        String responderId;
     }
 
     @Data
