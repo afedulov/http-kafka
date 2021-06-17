@@ -21,7 +21,6 @@
 		<maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
 		<testcontainers.version>1.15.3</testcontainers.version>
 		<protoc-jar-maven-plugin.version>3.11.1</protoc-jar-maven-plugin.version>
-		<protobuf.version>3.7.1</protobuf.version>
 		<flink.version>1.13.0</flink.version>
 		<springframework.boot.version>2.5.1</springframework.boot.version>
 	</properties>
@@ -81,13 +80,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Protobuf -->
-		<dependency>
-			<groupId>com.google.protobuf</groupId>
-			<artifactId>protobuf-java</artifactId>
-			<version>${protobuf.version}</version>
-		</dependency>
-
 		<!-- Flink Config -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>
@@ -102,66 +94,11 @@
 			<version>3.0.0</version>
 		</dependency>
 
-		<!-- Jackson -->
-		<dependency>
-			<groupId>com.fasterxml.jackson.dataformat</groupId>
-			<artifactId>jackson-dataformat-yaml</artifactId>
-			<version>2.11.1</version>
-			<scope>test</scope>
-		</dependency>
-
 	</dependencies>
 
 	<build>
 		<pluginManagement>
 			<plugins>
-				<plugin>
-					<groupId>com.github.os72</groupId>
-					<artifactId>protoc-jar-maven-plugin</artifactId>
-					<version>${protoc-jar-maven-plugin.version}</version>
-					<executions>
-						<!-- Generate src/main/protobuf -->
-						<execution>
-							<id>generate-protobuf-sources</id>
-							<phase>generate-sources</phase>
-							<goals>
-								<goal>run</goal>
-							</goals>
-							<configuration>
-								<includeStdTypes>true</includeStdTypes>
-								<protocVersion>${protobuf.version}</protocVersion>
-								<cleanOutputFolder>true</cleanOutputFolder>
-								<outputDirectory>${basedir}/target/generated-sources/protoc-jar</outputDirectory>
-							</configuration>
-						</execution>
-
-						<!-- Generate src/test/protobuf -->
-						<execution>
-							<id>generate-protobuf-test-sources</id>
-							<phase>generate-sources</phase>
-							<goals>
-								<goal>run</goal>
-							</goals>
-							<configuration>
-								<includeStdTypes>true</includeStdTypes>
-								<protocVersion>${protobuf.version}</protocVersion>
-								<inputDirectories>
-									<include>src/test/protobuf</include>
-								</inputDirectories>
-								<outputTargets>
-									<outputTarget>
-										<type>descriptor</type>
-										<outputDirectory>${basedir}/target/test-classes</outputDirectory>
-									</outputTarget>
-									<outputTarget>
-										<type>java</type>
-										<outputDirectory>${basedir}/target/generated-test-sources/protoc-jar</outputDirectory>
-									</outputTarget>
-								</outputTargets>
-							</configuration>
-						</execution>
-					</executions>
-				</plugin>
 			</plugins>
 		</pluginManagement>
 
