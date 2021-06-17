@@ -19,7 +19,6 @@
 package com.ververica.statefun;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.SneakyThrows;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
@@ -178,8 +177,6 @@ public class StatefulFunctionCluster extends ExternalResource {
   }
 
   public static class GenericStatefunContainer<SELF extends GenericStatefunContainer<SELF>> extends GenericContainer<SELF> {
-    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
-
     private static final String MODULE_YAML_MOUNT_PATH = "/opt/statefun/modules/application-module/module.yaml";
 
     private final Configuration dynamicProperties = new Configuration();
