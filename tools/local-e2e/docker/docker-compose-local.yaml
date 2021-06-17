@@ -87,7 +87,8 @@ services:
       - zoo
 
   ###############################################################
-  # Forward a port 8000 from the host's machine
+  # Forward a port 8000 from the host's machine.
+  # Required functions.py started on the host machine.
   ###############################################################
 
   host-machine:

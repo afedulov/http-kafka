@@ -1,8 +1,10 @@
 ### Start StateFun runtime + Kafka
 cd tools
-docker-compose -f docker-compose-local.yaml up
+docker-compose -f docker-compose-local.yaml up -V
 ### Start remote functions
 cd function-local/test
+source venv/bin/activate.fish
+python3 -m venv venv
 python functions.py
 ### Start invoke-responses consumer
 cd your-kafka-dist/bin

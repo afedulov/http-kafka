@@ -95,6 +95,7 @@ class Invocation(object):
     typename="org.apache.flink.statefun.e2e.remote/counter",
     specs=[ValueSpec(name='invoke_count', type=IntType)])
 def counter(context, message):
+    logging.warning("------------------")
     logging.warning(">> MESSAGE RECEIVED:")
     logging.warning(message)
 
@@ -115,7 +116,7 @@ def counter(context, message):
     value = str(base64.b64encode(str(n).encode("utf-8")), "utf-8")
     print(value)
 
-    response = Response(key="somekey!", value=value, responderId=context.address.namespace + "/" +context.address.name)
+    response = Response(key="somekey", value=value, responderId=context.address.namespace + "/" +context.address.name)
     invocation.response = response
 
     egress_message = kafka_egress_message(
@@ -140,8 +141,6 @@ from flask import make_response
 from flask import Flask
 
 app = Flask(__name__)
-
-
 
 
 @app.route('/service', methods=['POST'])

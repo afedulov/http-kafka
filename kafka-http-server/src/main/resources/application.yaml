@@ -1,6 +1,6 @@
 kafka:
   group:
-    id: http-request-reply1
+    id: http-request-reply
 spring:
   kafka:
     consumer:
