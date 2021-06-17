@@ -13,4 +13,5 @@ cd tools/function-local/test
 ### Verify Spring-based loop
 //start spring app
 curl localhost:8080/v1alpha1/invocation:in-payload  --request POST  --header "Content-Type: application/json" --header "Accept: application/json"  --data-binary @invocation.json
-
+### Show counter:
+curl localhost:8080/v1alpha1/invocation:in-payload  --request POST  --header "Content-Type: application/json" --header "Accept: application/json"  --data-binary @invocation.json | jq '.response.value' -r | base64 --decode

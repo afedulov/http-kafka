@@ -61,3 +61,8 @@ decoded_invocation = Invocation(metadata=des_dict.get('metadata',{}),
 
 pp.pprint(decoded_invocation.__dict__)
 print(decoded_invocation.__dict__)
+
+
+import base64
+r = str(base64.b64encode(str(10).encode("utf-8")), "utf-8")
+print(r)

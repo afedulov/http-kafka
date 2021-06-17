@@ -21,6 +21,7 @@ from statefun import *
 import logging
 import statefun
 import json
+import base64
 
 from remote_module_verification_pb2 import Invoke, InvokeResult
 
@@ -111,8 +112,10 @@ def counter(context, message):
     context.storage.invoke_count = n
 
     logging.warning(invocation.request)
-    
-    response = Response(key="somekey", value=n, responderId=context.address.namespace + "/" +context.address.name)
+    value = str(base64.b64encode(str(n).encode("utf-8")), "utf-8")
+    print(value)
+
+    response = Response(key="somekey!", value=value, responderId=context.address.namespace + "/" +context.address.name)
     invocation.response = response
 
     egress_message = kafka_egress_message(
@@ -122,32 +125,6 @@ def counter(context, message):
         value=invocation,
         value_type=Invocation.TYPE)
         # value="correlation_id=123")
-        # value_type="io.statefun.types/string")
-    context.send_egress(egress_message)
-
-    # context.send(
-    #     message_builder(target_typename="org.apache.flink.statefun.e2e.remote/forward-function",
-    #                     # use random keys to simulate both local handovers and
-    #                     # cross-partition messaging via the feedback loop
-    #                     target_id=uuid.uuid4().hex,
-    #                     value=response,
-    #                     value_type=InvokeResultType))
-
-
-@functions.bind("org.apache.flink.statefun.e2e.remote/forward-function")
-def forward_to_egress(context, message):
-    print(">>> MESSAGE RECEIVED IN FORWARD!!!", flush=True)
-    """
-    Simply forwards the results to the Kafka egress.
-    """
-    invoke_result = message.as_type(InvokeResultType)
-
-    egress_message = kafka_egress_message(
-        typename="org.apache.flink.statefun.e2e.remote/invoke-results",
-        topic="invoke-results",
-        key=invoke_result.id,
-        # value=invoke_result,
-        value="correlation_id=123")
         # value_type="io.statefun.types/string")
     context.send_egress(egress_message)
 
